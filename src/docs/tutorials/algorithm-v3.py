@@ -23,36 +23,24 @@ def align_sequences(seq1, seq2):
 
 def encode_patient_data(qc, patient_data, healthy_data):
     binary_data = ""
-
     mutation_detected = False
 
     for i, nucleotide in enumerate(patient_data):
-
         if nucleotide == 'A':
-
             binary_data += '00'
-
         elif nucleotide == 'C':
-
             binary_data += '01'
-
         elif nucleotide == 'G':
-
             binary_data += '10'
-
         elif nucleotide == 'T':
-
             binary_data += '11'
 
-            # Проверка за мутации чрез сравняване със здравата секвенция
-
+        # Проверка за мутации чрез сравняване със здравата секвенция
         if i < len(healthy_data) and nucleotide != healthy_data[i]:
             qc.z(i * 2)  # Прилага се Z гейт, ако е открита мутация
-
             mutation_detected = True
 
     for i, bit in enumerate(binary_data):
-
         if bit == '1':
             qc.x(i)  # Прилага се X (NOT) гейт за битовете, които трябва да бъдат в състояние |1⟩
 
@@ -63,11 +51,9 @@ def encode_patient_data(qc, patient_data, healthy_data):
 
     for i in range(len(binary_data)):
         qc.y(i)  # Добавяне на Y гейт
-
         qc.z(i)  # Добавяне на Z гейт
 
     for control_qubit in range(len(binary_data)):
-
         for target_qubit in range(control_qubit + 1, len(binary_data)):
             qc.cp(0.25 * 3.14159, control_qubit, target_qubit)  # Контролиран фазов гейт
 
@@ -76,34 +62,26 @@ def encode_patient_data(qc, patient_data, healthy_data):
 
 def calculate_probability(normalized_counts_cancer, normalized_counts_healthy, mutation_detected):
     total_cancer = sum(normalized_counts_cancer.values())
-
     total_healthy = sum(normalized_counts_healthy.values())
-
     total_samples = total_cancer + total_healthy
 
     cancer_probability = (total_cancer / total_samples) * 100
-
     healthy_probability = (total_healthy / total_samples) * 100
 
     # Увеличаване на вероятността за рак, ако е открита мутация
-
     if mutation_detected:
-        cancer_probability += 10  # Примерно увеличение на вероятността с 10%
+        cancer_probability += 10
+        healthy_probability -= 10
 
     return cancer_probability, healthy_probability
 
 
 def compare_probabilities(cancer_probability, healthy_probability, threshold=50):
     if cancer_probability > threshold and cancer_probability > healthy_probability:
-
         return "Cancer"
-
     elif healthy_probability > threshold and healthy_probability > cancer_probability:
-
         return "Healthy"
-
     else:
-
         return "Undetermined"
 
 
@@ -144,9 +122,9 @@ def main():
     qc_healthy_cells.measure_all()
 
     # Визуализация на квантовите вериги с измервания
-    print("Квантова верига за рак:")
+    print("Cancer quantum chain:")
     print(qc_cancer_cells.draw())
-    print("Квантова верига за здраве:")
+    print("Healthy quantum chain:")
     print(qc_healthy_cells.draw())
 
     # Симулация
@@ -167,21 +145,21 @@ def main():
     normalized_counts_healthy = {state: count / sum(counts_healthy.values()) for state, count in counts_healthy.items()}
 
     # Печат на нормализираните резултати за дебъгване
-    print("Нормализирани резултати (Рак):", normalized_counts_cancer)
-    print("Нормализирани резултати (Здраве):", normalized_counts_healthy)
+    print("Normalized results for cancer:", normalized_counts_cancer)
+    print("Normalized results for healthy:", normalized_counts_healthy)
 
     # Изчисляване на вероятностите
     cancer_probability, healthy_probability = calculate_probability(normalized_counts_cancer, normalized_counts_healthy,
                                                                     mutation_detected_cancer)
 
     # Печат на изчислените вероятности за дебъгване
-    print("Вероятност за рак:", cancer_probability)
-    print("Вероятност за здраве:", healthy_probability)
+    print(f"Cancer probability: {cancer_probability:.0f}%")
+    print(f"Healthy probability: {healthy_probability:.0f}%")
 
     # Сравнение на вероятностите и вземане на решение
     result = compare_probabilities(cancer_probability, healthy_probability)
 
-    print("Резултат от сравнението:", result)
+    print("Comparison results:", result)
 
     # Визуализация на резултатите
     plot_histogram([counts_cancer, counts_healthy], legend=["Cancer", "Healthy"])
