@@ -23,7 +23,7 @@ build/*
 # Ignore macOS DS_Store
 .DS_Store
 # Ignore other IDE Files
-contrib/standalone/version.hpp
+others/contrib/standalone/version.hpp
 *.log
 *.env
 *.idea/

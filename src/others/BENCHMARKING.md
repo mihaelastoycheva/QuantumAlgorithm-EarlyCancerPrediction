@@ -11,7 +11,7 @@ There you'll find a bunch of `*_benchmarks.py` files which represent the differe
 
 
 # How to run the benchmarks
-All prerequisites for building the project need to be installed in the system, take a look at the [CONTRIBUTING guide](.github/CONTRIBUTING.md) if you don't have them already installed.
+All prerequisites for building the project need to be installed in the system, take a look at the [CONTRIBUTING guide](others/.github/CONTRIBUTING.md) if you don't have them already installed.
 
 Install Airspeed Velocity (`ASV`):
 ```
