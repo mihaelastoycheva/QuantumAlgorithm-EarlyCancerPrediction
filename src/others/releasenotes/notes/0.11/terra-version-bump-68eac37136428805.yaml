@@ -1,4 +1,0 @@
----
-upgrade:
-  - |
-    The required version of Qiskit Terra has been bumped to 0.20.0.
