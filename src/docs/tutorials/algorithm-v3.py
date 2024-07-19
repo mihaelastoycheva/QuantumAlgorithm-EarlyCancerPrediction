@@ -1,7 +1,7 @@
-from qiskit import QuantumCircuit, transpile, assemble
+from qiskit import QuantumCircuit, transpile
 from qiskit_aer import Aer
 
-from qiskit.visualization import plot_histogram, plot_bloch_multivector
+from qiskit.visualization import plot_histogram
 
 import matplotlib.pyplot as plt
 
@@ -35,27 +35,27 @@ def encode_patient_data(qc, patient_data, healthy_data):
         elif nucleotide == 'T':
             binary_data += '11'
 
-        # Проверка за мутации чрез сравняване със здравата секвенция
+        # Check for mutations by comparison with the healthy sequence
         if i < len(healthy_data) and nucleotide != healthy_data[i]:
             qc.z(i * 2)  # Прилага се Z гейт, ако е открита мутация
             mutation_detected = True
 
     for i, bit in enumerate(binary_data):
         if bit == '1':
-            qc.x(i)  # Прилага се X (NOT) гейт за битовете, които трябва да бъдат в състояние |1⟩
+            qc.x(i)  # X (NOT) gate is applied to the bits that should be in the state |1⟩
 
     for i in range(len(binary_data)):
-        qc.h(i)  # Прилага се Hadamard гейт на всеки кубит за създаване на суперпозиция
+        qc.h(i)  # Hadamard gate applied to each qubit to create superposition
 
-    # Допълнителни гейтове
+    # Additional gates
 
     for i in range(len(binary_data)):
-        qc.y(i)  # Добавяне на Y гейт
-        qc.z(i)  # Добавяне на Z гейт
+        qc.y(i)  # Add Y gate
+        qc.z(i)  # Add Z gate
 
     for control_qubit in range(len(binary_data)):
         for target_qubit in range(control_qubit + 1, len(binary_data)):
-            qc.cp(0.25 * 3.14159, control_qubit, target_qubit)  # Контролиран фазов гейт
+            qc.cp(0.25 * 3.14159, control_qubit, target_qubit)  # Controlled phase gate
 
     return mutation_detected
 
@@ -68,7 +68,7 @@ def calculate_probability(normalized_counts_cancer, normalized_counts_healthy, m
     cancer_probability = (total_cancer / total_samples) * 100
     healthy_probability = (total_healthy / total_samples) * 100
 
-    # Увеличаване на вероятността за рак, ако е открита мутация
+    # Increasing the probability of cancer if a mutation is detected
     if mutation_detected:
         cancer_probability += 10
         healthy_probability -= 10
@@ -86,82 +86,69 @@ def compare_probabilities(cancer_probability, healthy_probability, threshold=50)
 
 
 def main():
-    # Въвеждане на пътища до файловете от потребителя
+    # User input of paths to files:
     # cancer_file_path = input("Въведете пътя до файла с данни за пациент с рак: ")
     # healthy_file_path = input("Въведете пътя до файла с данни за здрав пациент: ")
     #
-    # # Четене на данни за пациенти с рак и здрави пациенти от файлове
     # cancer_patient_data = read_sequence_from_file(cancer_file_path)
     # healthy_patient_data = read_sequence_from_file(healthy_file_path)
 
     cancer_patient_data = "ATCGATCG"
     healthy_patient_data = "GCTAGCTA"
 
-    # Подравняване на секвенциите
+    # Sequence Alignment
     cancer_patient_data, healthy_patient_data = align_sequences(cancer_patient_data, healthy_patient_data)
 
-    # Определяне на броя кубити
-    n_qubits = len(cancer_patient_data) * 2  # Всеки нуклеотид се представя с 2 бита
+    # Determining the number of qubits
+    n_qubits = len(cancer_patient_data) * 2  # Each nucleotide is represented by 2 bits
 
-    # Създаване на квантови вериги за раковите и здравите клетки
+    # Creating quantum circuits for cancer and healthy cells
     qc_cancer_cells = QuantumCircuit(n_qubits)
     qc_healthy_cells = QuantumCircuit(n_qubits)
 
-    # Кодиране на данните на пациента в квантови състояния и откриване на мутации
+    # Encoding patient data into quantum states and detecting mutations
     mutation_detected_cancer = encode_patient_data(qc_cancer_cells, cancer_patient_data, healthy_patient_data)
     mutation_detected_healthy = encode_patient_data(qc_healthy_cells, healthy_patient_data, healthy_patient_data)
 
-    # Прилагане на CNOT гейтове
+    # Application of CNOT gates
     for control_qubit in range(n_qubits):
         for target_qubit in range(control_qubit + 1, n_qubits):
             qc_cancer_cells.cx(control_qubit, target_qubit)
             qc_healthy_cells.cx(control_qubit, target_qubit)
 
-    # Измерване на резултатите
     qc_cancer_cells.measure_all()
     qc_healthy_cells.measure_all()
 
-    # Визуализация на квантовите вериги с измервания
     print("Cancer quantum chain:")
     print(qc_cancer_cells.draw())
     print("Healthy quantum chain:")
     print(qc_healthy_cells.draw())
 
-    # Симулация
     simulator = Aer.get_backend('aer_simulator')
 
-    # Изпълнение на квантовата верига за пациент с рак
     compiled_cancer_circuit = transpile(qc_cancer_cells, simulator)
-    # result_cancer_assemble = assemble(compiled_cancer_circuit, simulator)
     result_cancer = simulator.run(compiled_cancer_circuit).result()
     counts_cancer = result_cancer.get_counts(compiled_cancer_circuit)
     normalized_counts_cancer = {state: count / sum(counts_cancer.values()) for state, count in counts_cancer.items()}
 
-    # Изпълнение на квантовата верига за здрав пациент
     compiled_healthy_circuit = transpile(qc_healthy_cells, simulator)
-    # result_healthy_assemble = assemble(compiled_healthy_circuit, simulator)
     result_healthy = simulator.run(compiled_healthy_circuit).result()
     counts_healthy = result_healthy.get_counts(compiled_healthy_circuit)
     normalized_counts_healthy = {state: count / sum(counts_healthy.values()) for state, count in counts_healthy.items()}
 
-    # Печат на нормализираните резултати за дебъгване
     print("Normalized results for cancer:", normalized_counts_cancer)
     print("Normalized results for healthy:", normalized_counts_healthy)
 
-    # Изчисляване на вероятностите
     cancer_probability, healthy_probability = calculate_probability(normalized_counts_cancer, normalized_counts_healthy,
                                                                     mutation_detected_cancer)
 
-    # Печат на изчислените вероятности за дебъгване
     print(f"Cancer probability: {cancer_probability:.0f}%")
     print(f"Healthy probability: {healthy_probability:.0f}%")
 
-    # Сравнение на вероятностите и вземане на решение
     result = compare_probabilities(cancer_probability, healthy_probability)
 
     print("Comparison results:", result)
 
-    # Визуализация на резултатите
     plot_histogram([counts_cancer, counts_healthy], legend=["Cancer", "Healthy"])
 
     plt.show()
